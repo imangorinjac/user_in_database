@@ -12,7 +12,7 @@ db = SQLAlchemy(app)
 class User(db.Model):
     __table_args__ = {"extend_existing": True}
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(80), unique=True, nullable=False)
+    username = db.Column(db.String(80), unique=True, nullable=False, autoincrement=True)
     password = db.Column(db.String(120), nullable=False)
 
     def __init__(self, username, password):
@@ -21,24 +21,19 @@ class User(db.Model):
         self.password = password
 
 
-db.create_all()
-
 
 @app.route("/", methods=["GET", "POST"])
 def login():
+    username=request.form.get('username')
+    password=request.form.get('password')
+    
+    if username or password :
+        user = User.query.filter_by(username=username,password=password).first()
+        print('already taken')
+        return render_template('login.html')
 
-    if request.method == "GET":
-
-        return render_template("login.html")
-    else:
-        name = request.form["name"]
-        password = request.form["password"].encode("utf-8")
-        user = User.query.filter_by(username=f"{login}").first()
-        if user == None:
-            return "Non-Existing User"
-        else:
-            if bcrypt.checkpw(password, user.password.encode("utf-8")):
-                login_user(user)
-                return "Success"
-            else:
-                return "Bad creds."
+    if username is None or password is None :
+        user = User(username, password)
+        db.session.add(user)
+        db.session.commit()
+        return render_template('login.html')
